@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+# Import the exported targets from the installed export set
+include("${CMAKE_CURRENT_LIST_DIR}/nfrrconfigTargets.cmake")
+
+# Optionally check required components (none defined for now)
+check_required_components("@PROJECT_NAME@")
