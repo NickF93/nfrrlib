@@ -21,6 +21,8 @@ if [[ -z "${SOURCE_FILES}" ]]; then
 fi
 
 echo "Running clang-tidy on project sources..."
-echo "${SOURCE_FILES}" | xargs clang-tidy -p "${BUILD_DIR}"
+echo "${SOURCE_FILES}" | xargs clang-tidy -p "${BUILD_DIR}" \
+    --extra-arg=-std=gnu++23 \
+    --extra-arg=-stdlib=libstdc++
 
 echo "clang-tidy completed successfully"
