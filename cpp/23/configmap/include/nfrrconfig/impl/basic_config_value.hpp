@@ -1,5 +1,5 @@
-#ifndef BASE_CONFIG_VALUE_HPP
-#define BASE_CONFIG_VALUE_HPP
+#ifndef NFRRCONFIG_IMPL_BASIC_CONFIG_VALUE_HPP
+#define NFRRCONFIG_IMPL_BASIC_CONFIG_VALUE_HPP
 
 #include <algorithm>
 #include <cstdint>
@@ -253,6 +253,13 @@ class BasicConfigValue {
     /**
      * @brief Get the value converted to type T (by value), throwing on error.
      *
+     * API Design Note:
+     *  - get<T>()        : Performs type conversions, returns by value, throws on error
+     *  - get_ref<T&>()   : Direct access without conversion, returns reference, throws on error
+     *  - get_to(T&)      : Output parameter style, writes to existing variable, throws on error
+     *  - try_get<T>()    : Non-throwing version, returns std::expected<T, ConfigError>
+     *  - coerce<T>()     : Like get<T>() but also parses strings to numbers
+     *
      * This function supports:
      *  - T = bool, integral, floating: numeric conversions from Integer/Floating/Boolean.
      *  - T = String / Array / Object: exact-type access with copy.
@@ -357,10 +364,15 @@ class BasicConfigValue {
     typename Object::const_iterator find(std::string_view key) const;
 
     /**
-     * @brief Map-like operator[] for object access.
+     * @brief Map-like operator[] for object access with auto-vivification.
      *
-     * If the value is not an object, it is first converted to an empty object.
-     * If the key does not exist yet, it is inserted with a null value.
+     * Behavior (follows standard JSON library patterns):
+     *  - If the value is not an object, it is first converted to an empty object
+     *  - If the key does not exist, it is inserted with a null value
+     *  - Never throws, always returns a valid reference
+     *
+     * This enables convenient chained access: root["a"]["b"]["c"] = 42;
+     * Use at() for bounds-checked access that throws on missing keys.
      *
      * @return Reference to the associated BasicConfigValue.
      */
@@ -393,11 +405,13 @@ class BasicConfigValue {
     }
 
     // Helper: find key in object (non-const).
+    // Performs O(n) linear search. Efficient for typical config objects with few keys.
     static typename Object::iterator find_in_object(Object& obj, std::string_view key) {
         return std::find_if(obj.begin(), obj.end(), [key](const KeyValue& kv) { return kv.first == key; });
     }
 
     // Helper: find key in object (const).
+    // Performs O(n) linear search. Efficient for typical config objects with few keys.
     static typename Object::const_iterator find_in_object(const Object& obj, std::string_view key) {
         return std::find_if(obj.begin(), obj.end(), [key](const KeyValue& kv) { return kv.first == key; });
     }

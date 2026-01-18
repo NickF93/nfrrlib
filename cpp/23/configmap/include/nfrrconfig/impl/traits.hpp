@@ -38,6 +38,11 @@ struct ConfigStorageTraits {
     // Rebind base allocator to key_value_type for objects
     using kv_allocator = typename std::allocator_traits<base_allocator_type>::template rebind_alloc<key_value_type>;
 
+    // Object storage uses std::vector for cache-friendly sequential access.
+    // Lookup is O(n) via linear search, which is optimal for small objects (< 20 keys)
+    // due to cache locality. Preserves insertion order.
+    // TODO: Profile and consider switching to std::unordered_map or sorted vector
+    //       (flat_map pattern) if objects consistently exceed ~20-30 keys.
     using object_type = std::vector<key_value_type, kv_allocator>;
 
     // Variant storage for all supported kinds

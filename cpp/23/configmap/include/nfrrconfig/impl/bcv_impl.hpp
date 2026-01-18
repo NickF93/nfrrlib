@@ -88,6 +88,12 @@ inline typename BasicConfigValue<Alloc>::Object::iterator BasicConfigValue<Alloc
 template <typename Alloc>
 inline typename BasicConfigValue<Alloc>::Object::const_iterator
 BasicConfigValue<Alloc>::find(std::string_view key) const {
+    // Error handling: Returns end() iterator from static empty object when not an object.
+    // This is a sentinel pattern - calling code should check (it != obj.end()) before use.
+    // Alternatives considered:
+    //  - Throwing: would make find() inconsistent with STL container find() semantics
+    //  - Returning nullptr: can't return pointer from iterator-returning function
+    // This pattern allows: if (auto it = cfg.find("key"); it != cfg.end()) { ... }
     if (!is_object()) {
         static const Object empty{};
         return empty.end();

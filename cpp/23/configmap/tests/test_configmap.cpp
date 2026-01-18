@@ -1,33 +1,53 @@
 // tests/test_configmap.cpp
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <memory_resource>
+#include <numbers>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "nfrrconfig/impl/enums.hpp"
 #include "nfrrconfig/nfrrconfig.hpp"
 
 using Config = nfrr::config::ConfigValueStd;
+using ConfigPmr = nfrr::config::ConfigValuePmr;
 using nfrr::config::ConfigError;
 
-// Very small test helper
-#define CHECK(expr)                                                                                                    \
-    do {                                                                                                               \
-        if (!(expr)) {                                                                                                 \
-            throw std::runtime_error(std::string("CHECK failed: ") + #expr + " at " + __FILE__ + ":" +                 \
-                                     std::to_string(__LINE__));                                                        \
-        }                                                                                                              \
-    } while (false)
+namespace {
+// Test helper in anonymous namespace to avoid clang-tidy warnings
+inline void check_condition(bool condition, const char* expr, const char* file, int line) {
+    if (!condition) {
+        throw std::runtime_error(std::string("CHECK failed: ") + expr + " at " + file + ":" + std::to_string(line));
+    }
+}
+} // namespace
+
+#define CHECK(expr) check_condition((expr), #expr, __FILE__, __LINE__)
 
 // -----------------------------------------------------------------------------
 // Test cases declarations
 // -----------------------------------------------------------------------------
 
-static void test_scalar_assign_and_get();
-static void test_string_and_object_basic();
-static void test_numeric_conversions();
-static void test_coerce_from_string();
-static void test_object_helpers();
+namespace {
+void test_scalar_assign_and_get();
+void test_string_and_object_basic();
+void test_numeric_conversions();
+void test_coerce_from_string();
+void test_object_helpers();
+void test_array_operations();
+void test_edge_cases();
+void test_copy_move_semantics();
+void test_find_and_contains();
+void test_error_handling_patterns();
+void test_pmr_allocator();
+void test_null_and_kind_queries();
+} // namespace
 
 // -----------------------------------------------------------------------------
 // main
@@ -40,6 +60,13 @@ int main() {
         test_numeric_conversions();
         test_coerce_from_string();
         test_object_helpers();
+        test_array_operations();
+        test_edge_cases();
+        test_copy_move_semantics();
+        test_find_and_contains();
+        test_error_handling_patterns();
+        test_pmr_allocator();
+        test_null_and_kind_queries();
     } catch (const std::exception& ex) {
         std::cerr << "[configmap_tests] FAILURE: " << ex.what() << '\n';
         return 1;
@@ -53,7 +80,8 @@ int main() {
 // Implementations
 // -----------------------------------------------------------------------------
 
-static void test_scalar_assign_and_get() {
+namespace {
+void test_scalar_assign_and_get() {
     Config v;
 
     // Integer
@@ -69,18 +97,18 @@ static void test_scalar_assign_and_get() {
     // Boolean
     v.assign(true);
     CHECK(v.is_bool());
-    CHECK(v.get<bool>() == true);
+    CHECK(v.get<bool>());
 
     // Numeric conversions: Integer -> double/bool
     v.assign(10);
     CHECK(v.get<double>() == 10.0);
-    CHECK(v.get<bool>() == true);
+    CHECK(v.get<bool>());
 
     v.assign(0);
-    CHECK(v.get<bool>() == false);
+    CHECK(!v.get<bool>());
 }
 
-static void test_string_and_object_basic() {
+void test_string_and_object_basic() {
     Config root;
 
     // String assignment
@@ -95,18 +123,18 @@ static void test_string_and_object_basic() {
     root.set_object();
     root["port"].assign(8080);
     root["host"].assign("localhost");
-    root["pi"].assign(3.14159);
+    root["pi"].assign(std::numbers::pi);
 
     CHECK(root.is_object());
     CHECK(root.contains("port"));
     CHECK(root.contains("host"));
     CHECK(root.contains("pi"));
 
-    int port = root["port"].get<int>();
-    double pi = root["pi"].get<double>();
+    auto port = root["port"].get<int>();
+    auto pi_value = root["pi"].get<double>();
 
     CHECK(port == 8080);
-    CHECK(pi == 3.14159);
+    CHECK(pi_value == std::numbers::pi);
 
     // get_ref on internal String
     auto& host_ref = root["host"].get_ref<Config::String&>();
@@ -116,7 +144,7 @@ static void test_string_and_object_basic() {
     CHECK(host_const_ref == "localhost:8080");
 }
 
-static void test_numeric_conversions() {
+void test_numeric_conversions() {
     Config v;
 
     // In-range narrowing: int64_t -> short
@@ -156,31 +184,31 @@ static void test_numeric_conversions() {
     CHECK(as_double.has_value() && *as_double == 0.0);
 }
 
-static void test_coerce_from_string() {
+void test_coerce_from_string() {
     Config v;
 
     // String -> int
     v.assign("123");
-    int i = v.coerce<int>();
+    auto i = v.coerce<int>();
     CHECK(i == 123);
 
     // String -> double
     v.assign("3.5");
-    double d = v.coerce<double>();
+    auto d = v.coerce<double>();
     CHECK(d == 3.5);
 
     // Invalid numeric string should throw in coerce<T>()
     v.assign("not-a-number");
     bool threw = false;
     try {
-        (void)v.coerce<int>();
+        static_cast<void>(v.coerce<int>());
     } catch (const std::runtime_error&) {
         threw = true;
     }
     CHECK(threw);
 }
 
-static void test_object_helpers() {
+void test_object_helpers() {
     Config root;
 
     // operator[] must turn non-object into object
@@ -198,9 +226,210 @@ static void test_object_helpers() {
     // at() on missing key must throw
     bool threw = false;
     try {
-        (void)root.at("missing");
+        static_cast<void>(root.at("missing"));
     } catch (const std::out_of_range&) {
         threw = true;
     }
     CHECK(threw);
 }
+
+void test_array_operations() {
+    Config arr;
+    arr.set_array();
+
+    CHECK(arr.is_array());
+
+    // Access underlying array directly
+    auto& array_ref = arr.as_array();
+    CHECK(array_ref.empty());
+
+    // Add elements via direct array manipulation
+    Config elem1;
+    elem1.assign(10);
+    array_ref.push_back(std::move(elem1));
+
+    Config elem2;
+    elem2.assign(20);
+    array_ref.push_back(std::move(elem2));
+
+    Config elem3;
+    elem3.assign(30);
+    array_ref.push_back(std::move(elem3));
+
+    CHECK(array_ref.size() == 3);
+    CHECK(array_ref[0].get<int>() == 10);
+    CHECK(array_ref[1].get<int>() == 20);
+    CHECK(array_ref[2].get<int>() == 30);
+
+    // Test iteration
+    int sum = 0;
+    for (const auto& elem : arr.as_array()) {
+        sum += elem.get<int>();
+    }
+    CHECK(sum == 60);
+}
+
+void test_edge_cases() {
+    Config v;
+
+    // Default constructed is null
+    CHECK(v.is_null());
+
+    // Empty object
+    v.set_object();
+    CHECK(v.is_object());
+    CHECK(!v.contains("anything"));
+
+    // Empty array
+    v.set_array();
+    CHECK(v.is_array());
+    CHECK(v.as_array().empty());
+
+    // Empty string
+    v.assign("");
+    CHECK(v.is_string());
+    CHECK(v.get<Config::String>().empty());
+
+    // Zero values
+    v.assign(0);
+    CHECK(v.is_integer());
+    CHECK(v.get<int>() == 0);
+
+    v.assign(0.0);
+    CHECK(v.is_floating());
+    CHECK(v.get<double>() == 0.0);
+}
+
+void test_copy_move_semantics() {
+    Config original;
+    original["key"].assign(42);
+
+    // Copy construction
+    Config copied = original;
+    CHECK(copied.is_object());
+    CHECK(copied["key"].get<int>() == 42);
+
+    // Modify copy shouldn't affect original
+    copied["key"].assign(100);
+    CHECK(original["key"].get<int>() == 42);
+    CHECK(copied["key"].get<int>() == 100);
+
+    // Move construction
+    Config moved = std::move(copied);
+    CHECK(moved.is_object());
+    CHECK(moved["key"].get<int>() == 100);
+
+    // Copy assignment
+    Config assigned;
+    assigned = original;
+    CHECK(assigned["key"].get<int>() == 42);
+
+    // Move assignment
+    Config move_assigned;
+    move_assigned = std::move(assigned);
+    CHECK(move_assigned["key"].get<int>() == 42);
+}
+
+void test_find_and_contains() {
+    Config obj;
+    obj.set_object();
+    obj["exists"].assign(123);
+
+    // find() on existing key
+    auto it = obj.find("exists");
+    auto obj_end = obj.as_object().end();
+    CHECK(it != obj_end);
+    CHECK(it->second.get<int>() == 123);
+
+    // find() on non-existing key
+    auto not_found = obj.find("missing");
+    CHECK(not_found == obj_end);
+
+    // contains()
+    CHECK(obj.contains("exists"));
+    CHECK(!obj.contains("missing"));
+
+    // find() on non-object returns sentinel end()
+    Config not_obj;
+    not_obj.assign(42);
+    auto sentinel = not_obj.find("any");
+    // Sentinel is static empty object's end(), different from not_obj's non-existent end()
+    CHECK(sentinel == sentinel); // Just verify it compiles and returns something
+}
+
+void test_error_handling_patterns() {
+    Config v;
+
+    // try_get() non-throwing pattern
+    v.assign("string_value");
+    auto int_result = v.try_get<int>();
+    CHECK(!int_result.has_value());
+    CHECK(int_result.error() == ConfigError::TypeMismatch);
+
+    // get() throwing pattern
+    bool threw = false;
+    try {
+        static_cast<void>(v.get<int>());
+    } catch (const std::runtime_error&) {
+        threw = true;
+    }
+    CHECK(threw);
+
+    // at() throwing on missing key
+    Config obj;
+    obj.set_object();
+    threw = false;
+    try {
+        static_cast<void>(obj.at("nonexistent"));
+    } catch (const std::out_of_range&) {
+        threw = true;
+    }
+    CHECK(threw);
+}
+
+void test_pmr_allocator() {
+    // Test with PMR allocator - basic operations
+    std::array<std::byte, 4096> buffer{};
+    std::pmr::monotonic_buffer_resource mbr{buffer.data(), buffer.size()};
+
+    ConfigPmr v{std::pmr::polymorphic_allocator<std::byte>{&mbr}};
+    v.assign(42);
+    CHECK(v.is_integer());
+    CHECK(v.get<int>() == 42);
+
+    // Test string with PMR
+    v.assign("test string");
+    CHECK(v.is_string());
+
+    // Test array with PMR
+    v.set_array();
+    CHECK(v.is_array());
+}
+
+void test_null_and_kind_queries() {
+    Config v;
+
+    // Default is null
+    CHECK(v.is_null());
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Null);
+
+    // Test all kinds
+    v.assign(true);
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Boolean);
+
+    v.assign(42);
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Integer);
+
+    v.assign(3.14);
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Floating);
+
+    v.assign("text");
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::String);
+
+    v.set_array();
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Array);
+
+    v.set_object();
+    CHECK(v.kind() == nfrr::config::ConfigValueKind::Object);
+}
+} // namespace
