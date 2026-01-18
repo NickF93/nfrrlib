@@ -1,22 +1,22 @@
 // tests/test_configmap.cpp
-#include "nfrrconfig/nfrrconfig.hpp"
-
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
-#include <limits>
+
+#include "nfrrconfig/impl/enums.hpp"
+#include "nfrrconfig/nfrrconfig.hpp"
 
 using Config = nfrr::config::ConfigValueStd;
 using nfrr::config::ConfigError;
 
 // Very small test helper
-#define CHECK(expr)                                                          \
-    do {                                                                     \
-        if (!(expr)) {                                                       \
-            throw std::runtime_error(                                        \
-                std::string("CHECK failed: ") + #expr +                      \
-                " at " + __FILE__ + ":" + std::to_string(__LINE__));         \
-        }                                                                    \
+#define CHECK(expr)                                                                                                    \
+    do {                                                                                                               \
+        if (!(expr)) {                                                                                                 \
+            throw std::runtime_error(std::string("CHECK failed: ") + #expr + " at " + __FILE__ + ":" +                 \
+                                     std::to_string(__LINE__));                                                        \
+        }                                                                                                              \
     } while (false)
 
 // -----------------------------------------------------------------------------
@@ -33,8 +33,7 @@ static void test_object_helpers();
 // main
 // -----------------------------------------------------------------------------
 
-int main()
-{
+int main() {
     try {
         test_scalar_assign_and_get();
         test_string_and_object_basic();
@@ -54,8 +53,7 @@ int main()
 // Implementations
 // -----------------------------------------------------------------------------
 
-static void test_scalar_assign_and_get()
-{
+static void test_scalar_assign_and_get() {
     Config v;
 
     // Integer
@@ -82,8 +80,7 @@ static void test_scalar_assign_and_get()
     CHECK(v.get<bool>() == false);
 }
 
-static void test_string_and_object_basic()
-{
+static void test_string_and_object_basic() {
     Config root;
 
     // String assignment
@@ -119,8 +116,7 @@ static void test_string_and_object_basic()
     CHECK(host_const_ref == "localhost:8080");
 }
 
-static void test_numeric_conversions()
-{
+static void test_numeric_conversions() {
     Config v;
 
     // In-range narrowing: int64_t -> short
@@ -160,8 +156,7 @@ static void test_numeric_conversions()
     CHECK(as_double.has_value() && *as_double == 0.0);
 }
 
-static void test_coerce_from_string()
-{
+static void test_coerce_from_string() {
     Config v;
 
     // String -> int
@@ -185,8 +180,7 @@ static void test_coerce_from_string()
     CHECK(threw);
 }
 
-static void test_object_helpers()
-{
+static void test_object_helpers() {
     Config root;
 
     // operator[] must turn non-object into object

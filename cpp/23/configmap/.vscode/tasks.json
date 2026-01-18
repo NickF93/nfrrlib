@@ -1,0 +1,241 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "clang-tidy:active-file",
+      "type": "shell",
+      "command": "clang-tidy",
+      "args": [
+        "-p",
+        "${command:cmake.buildDirectory}",
+        "${file}"
+      ],
+      "problemMatcher": "$gcc",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "cppcheck:active-file",
+      "type": "shell",
+      "command": "cppcheck",
+      "args": [
+        "--project=${command:cmake.buildDirectory}/compile_commands.json",
+        "--enable=warning,style,performance,portability",
+        "--inline-suppr",
+        "--suppress=missingIncludeSystem",
+        "--relative-paths",
+        "--template={file}:{line}:{column}: warning: [cppcheck/{severity}] {message}",
+        "--file-filter=${file}"
+      ],
+      "problemMatcher": "$gcc",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "analysis:active-file",
+      "dependsOn": [
+        "clang-tidy:active-file",
+        "cppcheck:active-file"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "clang-tidy:project",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/run_clang_tidy.sh",
+      "problemMatcher": "$gcc",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "BUILD_DIR": "${command:cmake.buildDirectory}"
+        }
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Run clang-tidy on project sources using compile_commands.json."
+    },
+    {
+      "label": "cppcheck:project",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${command:cmake.buildDirectory}",
+        "--target",
+        "run_cppcheck",
+        "--parallel"
+      ],
+      "problemMatcher": "$gcc",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Run Cppcheck via CMake target run_cppcheck (requires ENABLE_CPPCHECK=ON)."
+    },
+    {
+      "label": "analysis:project",
+      "dependsOn": [
+        "clang-tidy:project",
+        "cppcheck:project"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "cppcheck:project-script",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/run_cppcheck.sh",
+      "problemMatcher": "$gcc",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "BUILD_DIR": "${command:cmake.buildDirectory}"
+        }
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Run cppcheck on project sources using compile_commands.json."
+    },
+    {
+      "label": "cmake:configure",
+      "type": "cmake",
+      "command": "configure",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Configure using the active CMake preset."
+    },
+    {
+      "label": "cmake:build",
+      "type": "cmake",
+      "command": "build",
+      "problemMatcher": "$gcc",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Build using the active CMake preset."
+    },
+    {
+      "label": "cmake:configure:debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "unix-debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Configure Debug preset (unix-debug)."
+    },
+    {
+      "label": "cmake:build:debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "unix-debug"
+      ],
+      "dependsOn": [
+        "cmake:configure:debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Configure + build Debug preset."
+    },
+    {
+      "label": "cmake:configure:release",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "unix-release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Configure Release preset (unix-release)."
+    },
+    {
+      "label": "cmake:build:release",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "unix-release"
+      ],
+      "dependsOn": [
+        "cmake:configure:release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "detail": "Configure + build Release preset."
+    }
+  ]
+}

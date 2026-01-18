@@ -5,6 +5,9 @@ project(nfrrconfig
     LANGUAGES CXX
 )
 
+# Generate compile_commands.json for clangd and other tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Option to choose between -std=c++23 and -std=gnu++23
 option(NFRRCONFIG_USE_GNU_EXTENSIONS
     "Use GNU++ dialect (-std=gnu++23) instead of -std=c++23"
@@ -57,6 +60,12 @@ add_executable(test_configmap
 target_link_libraries(test_configmap
     PRIVATE
         nfrrconfig
+)
+
+# Install the example executable
+install(
+    TARGETS test_configmap
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 # ------------------------------------------------------------------------------

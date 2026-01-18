@@ -1,20 +1,22 @@
 // main.cpp
-#include "nfrrconfig/nfrrconfig.hpp"
 #include <iostream>
+#include <numbers>
+#include <string>
 
-int main()
-{
+#include "nfrrconfig/nfrrconfig.hpp"
+
+int main() {
     using Config = nfrr::config::ConfigValueStd; // or ConfigValuePmr later
 
     Config root;
 
     // Assign simple scalar values
     root.assign(42); // integer
-    int int_val = root.get<int>();
+    auto int_val = root.get<int>();
     std::cout << "int_val = " << int_val << '\n';
 
     root.assign(3.14);
-    double dbl_val = root.get<double>();
+    auto dbl_val = root.get<double>();
     std::cout << "dbl_val = " << dbl_val << '\n';
 
     // Assign a string
@@ -29,11 +31,11 @@ int main()
     // Fill object fields using operator[]
     root["port"].assign(8080);
     root["host"].assign("localhost");
-    root["pi"].assign(3.14159);
+    root["pi"].assign(std::numbers::pi);
 
     // Numeric conversion with get<T>()
-    int port = root["port"].get<int>();
-    double pi = root["pi"].get<double>();
+    auto port = root["port"].get<int>();
+    auto pi = root["pi"].get<double>();
 
     std::cout << "port = " << port << '\n';
     std::cout << "pi   = " << pi << '\n';

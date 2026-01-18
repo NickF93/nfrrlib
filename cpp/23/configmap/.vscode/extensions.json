@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "llvm-vs-code-extensions.vscode-clangd",
+    "ms-vscode.cmake-tools",
+    "twxs.cmake",
+    "vadimcn.vscode-lldb",
+    "emeraldwalk.runonsave",
+    "cppchecksolutionsab.cppcheck-official",
+    "ms-vscode.cpptools",
+    "xaver.clang-format"
+  ]
+}

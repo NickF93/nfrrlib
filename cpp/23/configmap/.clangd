@@ -1,0 +1,39 @@
+CompileFlags:
+  Add:
+    - "-Wall"
+    - "-Wextra"
+    - "-Wpedantic"
+    - "-std=c++23"
+    - "-Iinclude"
+  CompilationDatabase: build
+
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - modernize-*
+      - performance-*
+      - readability-*
+      - cppcoreguidelines-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - llvmlibc-*
+      - readability-identifier-length
+      - cppcoreguidelines-avoid-magic-numbers
+      - cppcoreguidelines-non-private-member-variables-in-classes
+      - readability-magic-numbers
+      - readability-function-cognitive-complexity
+
+Index:
+  Background: Build
+  StandardLibrary: No
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+Hover:
+  ShowAKA: Yes
